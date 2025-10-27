@@ -4,7 +4,7 @@ Constants and default values
 from pathlib import Path
 
 # Directories
-CONFIG_DIR = Path.home() / ".cli-helper"
+CONFIG_DIR = Path.home() / ".vira-cli"
 CONFIG_FILE = CONFIG_DIR / "config.ini"
 HISTORY_FILE = CONFIG_DIR / "history.json"
 FAVORITES_FILE = CONFIG_DIR / "favorites.json"

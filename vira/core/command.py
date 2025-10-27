@@ -7,7 +7,7 @@ import subprocess
 
 INTERACTIVE_KEYWORDS = ["npm", "npx", "yarn", "create-react-app"]
 
-def execute_command(command):
+def execute_command(command, capture_output=True):
     """
     Smart shell executor for CLI AI.
     Detects if command is interactive and prompts user before running.
@@ -19,8 +19,9 @@ def execute_command(command):
     interactive = any(cmd in command for cmd in INTERACTIVE_KEYWORDS)
 
     try:
-        if interactive:
-            # Interactive command: use Popen with real stdin/stdout
+        # Nếu không cần capture output HOẶC là interactive command
+        if not capture_output or interactive:
+            # Chạy trực tiếp, không capture output
             process = subprocess.Popen(
                 command,
                 shell=True,
@@ -28,23 +29,15 @@ def execute_command(command):
             )
             process.communicate()
             success = process.returncode == 0
-            if success:
-                print("✅ Command finished successfully")
-            else:
-                print("❌ Command failed")
             return success, "", ""
         else:
-            # Non-interactive: capture output
+            # Capture output cho non-interactive command
             result = subprocess.run(
                 command,
                 shell=True,
                 text=True,
                 capture_output=True
             )
-            if result.returncode == 0:
-                print("✅ Command finished successfully")
-            else:
-                print("❌ Command failed")
             return (
                 result.returncode == 0,
                 result.stdout.strip() if result.stdout else "",
@@ -52,7 +45,6 @@ def execute_command(command):
             )
     except Exception as e:
         return False, "", str(e)
-
 
 def is_safe_command(command):
     """

@@ -7,8 +7,8 @@ if os.path.exists("README.md"):
         readme_content = f.read()
 
 setup(
-    name="Vira CLI",
-    version="1.0.0",
+    name="vira-cli",
+    version="1.0.2",
     packages=find_packages(),
     install_requires=[
         "google-generativeai>=0.3.0",
