@@ -6,9 +6,8 @@ from pathlib import Path
 # Directories
 CONFIG_DIR = Path.home() / ".vira-cli"
 CONFIG_FILE = CONFIG_DIR / "config.ini"
-HISTORY_FILE = CONFIG_DIR / "history.json"
+HISTORY_DIR = CONFIG_DIR / "logs"
 FAVORITES_FILE = CONFIG_DIR / "favorites.json"
-
 # Default settings
 DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_LANGUAGE = "en"

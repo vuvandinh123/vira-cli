@@ -2,7 +2,7 @@
 
 > Transform natural language into shell commands instantly with the power of Google Gemini AI
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/vuvandinh123/vira-cli)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/vuvandinh123/vira-cli)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
@@ -368,7 +368,8 @@ $ vira -i
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Type 'exit' or 'quit' to exit.
 Type 'fix' to fix last error.
-Type 'explain' to explain last command.
+Type 'run <command>' to run a command.
+Type 'history' to show recent commands.
 💡 Use ↑↓ arrows to browse history, Ctrl+R to search
 
 You: list all files

@@ -8,9 +8,10 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.styles import Style
 
 from ..core.ai import AIAssistant
-from ..core.command import execute_command
-from ..utils.console import console, print_error, print_command, confirm
+from ..core.command import execute_with_log, get_last_error, get_command_history
+from ..utils.console import console, print_error, print_command, confirm, print_success
 from ..config.constants import CONFIG_DIR
+from ..features.fix import CommandFixer
 
 
 class ChatMode:
@@ -19,8 +20,7 @@ class ChatMode:
     def __init__(self, ai: AIAssistant, os_type: str):
         self.ai = ai
         self.os_type = os_type
-        self.last_error = None
-        self.last_command = None
+        self.fixer = CommandFixer(ai, os_type)
         
         # Setup history file
         history_file = CONFIG_DIR / "chat_history.txt"
@@ -43,7 +43,7 @@ class ChatMode:
         console.rule("[bold cyan]💬 Interactive Terminal Helper")
         console.print("[yellow]Type 'exit' or 'quit' to exit.[/yellow]")
         console.print("[yellow]Type 'fix' to fix last error.[/yellow]")
-        console.print("[yellow]Type 'explain' to explain last command.[/yellow]")
+        console.print("[yellow]Type 'history' to show recent commands.[/yellow]")
         console.print("[yellow]Type 'run <command>' to run a command.[/yellow]")
         console.print("[dim]💡 Use ↑↓ arrows to browse history, Ctrl+R to search[/dim]\n")
         
@@ -57,59 +57,41 @@ class ChatMode:
                 
                 if not user_input:
                     continue
+                
+                # Run command directly
                 if user_input.lower().startswith("run "):
-                    command = user_input[4:].strip()  # lấy lệnh sau 'run '
+                    command = user_input[4:].strip()
                     if not command:
                         print_error("No command provided after 'run'")
                         continue
-
-                    # Nếu có multi-line command (có && hoặc ;), giữ nguyên
-                    commands = [c.strip() for c in command.split("\n") if c.strip()]
-                    full_command = " && ".join(commands)  # nối các dòng bằng &&
                     
-                    # Chạy lệnh interactive (stdout/stderr in ra terminal)
-                    success, stdout, stderr = execute_command(full_command)
-                    
-                    if stdout:
-                        console.print(stdout)
-                    if stderr:
-                        console.print(f"[red]{stderr}[/red]")
-                        self.last_error = stderr
-                    else:
-                        self.last_error = None
-                    
-                    if success:
-                        console.print("[green]✅ Done![/green]")
-                    else:
-                        console.print("[red]❌ Command failed[/red]")
-                    
-                    self.last_command = full_command
+                    self._execute_command(command)
                     continue
+                
                 # Exit commands
                 if user_input.lower() in ["exit", "quit", "q"]:
                     console.print("[green]👋 Bye![/green]")
                     break
                 
-                # Fix last error
+                # Fix last error using enhanced fixer
                 if user_input.lower() == "fix":
-                    if not self.last_error or not self.last_command:
-                        print_error("No previous error to fix")
-                        continue
-                    
-                    command = self._fix_error()
-                    if command:
-                        print_command(command)
-                        self._execute_if_confirmed(command)
+                    self.fixer.fix_last_error(max_attempts=3)
                     continue
                 
-                # Explain last command
-                if user_input.lower() == "explain":
-                    if not self.last_command:
-                        print_error("No previous command to explain")
-                        continue
-                    
-                    self._explain_command()
+                # Show command history
+                if user_input.lower() == "history":
+                    self._show_history()
                     continue
+                
+                # # Explain last command
+                # if user_input.lower() == "explain":
+                #     last_error = get_last_error()
+                #     if not last_error:
+                #         print_error("No previous command to explain")
+                #         continue
+                    
+                #     self._explain_command(last_error['command'])
+                #     continue
                 
                 # Clear screen
                 if user_input.lower() == "clear":
@@ -156,46 +138,41 @@ Command:"""
             # Clean up
             command = self._clean_command(command)
             
-            self.last_command = command
             return command
             
         except Exception as e:
             print_error(f"Failed to generate command: {e}")
             return None
     
-    def _fix_error(self):
-        """Fix the last failed command"""
-        prompt = f"""You are an expert {self.os_type} terminal assistant.
-
-The command failed:
-Command: {self.last_command}
-Error: {self.last_error}
-
-**CRITICAL RULES:**
-1. Return ONLY the FIXED command
-2. NO explanations, NO markdown, NO extra text
-3. Just the corrected executable command
-4. One line only
-
-Fixed command:"""
+    def _execute_command(self, command):
+        """Execute command with enhanced logging"""
+        # Handle multi-line commands
+        commands = [c.strip() for c in command.split("\n") if c.strip()]
+        full_command = " && ".join(commands)
         
-        try:
-            response = self.ai.model.generate_content(prompt)
-            command = response.text.strip()
-            command = self._clean_command(command)
-            
-            self.last_command = command
-            return command
-            
-        except Exception as e:
-            print_error(f"Failed to fix command: {e}")
-            return None
+        console.print(f"[dim]Executing: {full_command}[/dim]")
+        
+        # Use enhanced executor with logging
+        # capture_output=False means output goes directly to terminal
+        result = execute_with_log(full_command, capture_output=False)
+        
+        # Print status message
+        if result['success']:
+            console.print("[green]✅ Done![/green]")
+        else:
+            console.print("[red]❌ Command failed[/red]")
+            console.print("[yellow]💡 Type 'fix' to attempt auto-fix[/yellow]")
     
-    def _explain_command(self):
-        """Explain the last command"""
+    def _execute_if_confirmed(self, command):
+        """Execute command after confirmation with enhanced logging"""
+        if confirm("▶ Run this command?"):
+            self._execute_command(command)
+    
+    def _explain_command(self, command):
+        """Explain a command"""
         prompt = f"""Explain this {self.os_type} command briefly:
 
-Command: {self.last_command}
+Command: {command}
 
 Provide a short explanation (2-3 sentences max)."""
         
@@ -208,34 +185,46 @@ Provide a short explanation (2-3 sentences max)."""
         except Exception as e:
             print_error(f"Failed to explain: {e}")
     
-    def _execute_if_confirmed(self, command):
-        """Execute command after confirmation"""
-        if confirm("▶ Run this command?"):
-            success, stdout, stderr = execute_command(command)
+    def _show_history(self):
+        """Show recent command history"""
+        history = get_command_history(limit=15)
+        
+        if not history:
+            console.print("[dim]No command history found[/dim]")
+            return
+        
+        console.print("\n[bold cyan]Recent Commands:[/bold cyan]\n")
+        
+        for i, entry in enumerate(history, 1):
+            status = "✓" if entry['success'] else "✗"
+            color = "green" if entry['success'] else "red"
             
-            if stdout:
-                console.print(stdout)
+            console.print(f"[{color}]{status}[/{color}] [{i}] {entry['command']}")
             
-            if stderr:
-                console.print(f"[red]{stderr}[/red]")
-                self.last_error = stderr
-            else:
-                self.last_error = None
+            # Show timestamp
+            timestamp = entry['timestamp'].split('T')[1].split('.')[0]  # HH:MM:SS
+            console.print(f"    [dim]{timestamp} | Exit: {entry['exit_code']}[/dim]")
             
-            if success:
-                console.print("[green]✅ Done![/green]")
-            else:
-                console.print("[red]❌ Command failed[/red]")
+            # Show error if failed
+            if not entry['success'] and entry['stderr']:
+                error_preview = entry['stderr'][:80]
+                if len(entry['stderr']) > 80:
+                    error_preview += "..."
+                console.print(f"    [red]Error: {error_preview}[/red]")
+            
+            console.print()
     
     def _show_help(self):
         """Show help message"""
         console.print("""
 [bold cyan]Available Commands:[/bold cyan]
   [green]exit, quit, q[/green]    - Exit interactive mode
-  [green]fix[/green]               - Fix the last failed command
+  [green]fix[/green]               - Fix the last failed command (auto-retry)
   [green]explain[/green]           - Explain the last command
+  [green]history[/green]           - Show recent command history
   [green]clear[/green]             - Clear screen
   [green]help[/green]              - Show this help message
+  [green]run <command>[/green]    - Run a command directly (with logging)
   [green]<any text>[/green]       - Generate command from your query
 
 [bold cyan]Keyboard Shortcuts:[/bold cyan]
@@ -243,6 +232,12 @@ Provide a short explanation (2-3 sentences max)."""
   [green]Ctrl+R[/green]            - Search history (type to filter)
   [green]Ctrl+C[/green]            - Cancel current input
   [green]Ctrl+D[/green]            - Exit
+
+[bold cyan]Features:[/bold cyan]
+  • All commands are automatically logged
+  • Failed commands can be auto-fixed with AI
+  • Command history persists across sessions
+  • Interactive commands (npm create, etc.) are supported
 """)
     
     def _clean_command(self, command):

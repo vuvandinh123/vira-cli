@@ -33,9 +33,9 @@ def print_command(command):
     console.print(f"\n✨ [bold green]{command}[/bold green]\n")
 
 
-def print_thinking():
+def print_thinking(text="Thinking..."):
     """Print thinking message"""
-    console.print("💭 [dim]Thinking...[/dim]")
+    console.print(f"💭 [dim]{text}[/dim]")
 
 
 def print_options(options_text):

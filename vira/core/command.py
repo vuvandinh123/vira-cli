@@ -1,50 +1,45 @@
 """
-Command execution utilities
+Command execution utilities with logging
+Cross-platform support for Windows, macOS, and Linux
 """
-import subprocess
+import platform
+from vira.services.command_logger import CommandLogger
+from vira.services.command_executor import CommandExecutor
+# Detect OS
+IS_WINDOWS = platform.system() == "Windows"
 
-import subprocess
+    
+# Singleton instances
+_default_logger = CommandLogger()
+_default_executor = CommandExecutor(_default_logger)
 
-INTERACTIVE_KEYWORDS = ["npm", "npx", "yarn", "create-react-app"]
 
 def execute_command(command, capture_output=True):
     """
-    Smart shell executor for CLI AI.
-    Detects if command is interactive and prompts user before running.
-
-    Returns:
-        success (bool), stdout (str), stderr (str)
+    Legacy wrapper for backward compatibility.
+    Returns: (success: bool, stdout: str, stderr: str)
     """
-    # Detect if command is interactive
-    interactive = any(cmd in command for cmd in INTERACTIVE_KEYWORDS)
+    result = _default_executor.execute(command, capture_output)
+    return result['success'], result['stdout'], result['stderr']
 
-    try:
-        # Nếu không cần capture output HOẶC là interactive command
-        if not capture_output or interactive:
-            # Chạy trực tiếp, không capture output
-            process = subprocess.Popen(
-                command,
-                shell=True,
-                text=True
-            )
-            process.communicate()
-            success = process.returncode == 0
-            return success, "", ""
-        else:
-            # Capture output cho non-interactive command
-            result = subprocess.run(
-                command,
-                shell=True,
-                text=True,
-                capture_output=True
-            )
-            return (
-                result.returncode == 0,
-                result.stdout.strip() if result.stdout else "",
-                result.stderr.strip() if result.stderr else ""
-            )
-    except Exception as e:
-        return False, "", str(e)
+
+def execute_with_log(command, capture_output=True):
+    """
+    Enhanced execution that returns full result with log entry.
+    Returns: dict with success, stdout, stderr, exit_code, log_entry
+    """
+    return _default_executor.execute(command, capture_output)
+
+
+def get_last_error():
+    """Get the last failed command for AI to analyze and fix"""
+    return _default_executor.get_last_error()
+
+
+def get_command_history(limit=10):
+    """Get recent command history"""
+    return _default_logger.get_recent_history(limit)
+
 
 def is_safe_command(command):
     """
@@ -60,8 +55,16 @@ def is_safe_command(command):
         "chmod -R 777 /",
     ]
     
+    # Windows-specific dangerous commands
+    if IS_WINDOWS:
+        dangerous_patterns.extend([
+            "format c:",
+            "del /f /s /q c:\\",
+            "rd /s /q c:\\",
+        ])
+    
     for pattern in dangerous_patterns:
-        if pattern in command:
+        if pattern.lower() in command.lower():
             return False, f"Dangerous pattern detected: {pattern}"
     
     return True, ""
