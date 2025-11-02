@@ -328,7 +328,7 @@
 
     <!-- Video Demo Section -->
     <section id="demo" class="py-20 px-6">
-        <div class="container mx-auto">
+        <div class="container mx-auto" >
             <div class="text-center mb-16 fade-in">
                 <h2 class="text-4xl md:text-5xl font-bold mb-4">
                     Watch The <span class="gradient-text">Demo</span>
@@ -336,13 +336,14 @@
                 <p class="text-gray-400 text-lg">See how Vira CLI transforms your workflow</p>
             </div>
 
-            <div class="max-w-4xl mx-auto fade-in">
+            <div class="max-w-4xl container-demo mx-auto fade-in">
                 <div class="relative rounded-2xl overflow-hidden shadow-2xl">
                     <div
                         class="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
                         <div class="text-center">
                             <div
-                                class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition cursor-pointer">
+                                class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 hover:scale-110 transition cursor-pointer"
+                                id="demo-play-button" role="button" aria-label="Play demo video" aria-haspopup="dialog" aria-expanded="false">
                                 <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z" />
                                 </svg>
@@ -354,6 +355,25 @@
             </div>
         </div>
     </section>
+
+    <!-- Video Modal (hidden by default) -->
+    <div id="demo-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="max-w-4xl w-full flex items-center justify-center" id="demo-modal-content">
+            <div class="relative bg-transparent rounded-lg overflow-hidden w-full">
+                <button id="demo-close-button" class="absolute top-3 right-3 z-50 text-white bg-black/40 hover:bg-black/60 rounded-full p-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                <div class="w-full flex items-center justify-center bg-black">
+                    <video id="demo-video" class="w-full max-w-full max-h-[80vh] h-auto object-contain" style="max-height:80vh; object-fit:contain;" controls playsinline preload="metadata">
+                        <source src="./demo.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Reviews Section -->
     <section id="reviews" class="py-20 px-6 bg-gradient-to-b from-orange-500/5 to-transparent">

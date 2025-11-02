@@ -10,7 +10,7 @@ def setup_configuration(config: ConfigManager, os_type: str):
     console.rule("[bold cyan]⚙️ Configuration Mode")
 
     # Show current configuration option
-    show_now = input("Hiển thị cấu hình hiện tại trước khi thay đổi? [y/N]: ").strip().lower() or "n"
+    show_now = input("Show current configuration? [Y/n]: ").strip().lower() or "y"
     if show_now in ("y", "yes"):
         current_model = config.get_model()
         current_lang = config.get_language()
@@ -22,8 +22,8 @@ def setup_configuration(config: ConfigManager, os_type: str):
             else:
                 masked_api = "***"
         else:
-            masked_api = "(chưa cấu hình)"
-        console.print("\n[bold]Cấu hình hiện tại:[/bold]")
+            masked_api = "(not configured)"
+        console.print("\n[bold]Settings:[/bold]")
         console.print(f"  Model: {current_model}")
         console.print(f"  Language: {current_lang}")
         console.print(f"  Show suggestions: {current_show_sugg}")

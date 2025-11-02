@@ -1,5 +1,5 @@
 """
-Vira CLI Application
+Vira CLI Application - Updated with missing configuration methods
 """
 import sys
 
@@ -45,6 +45,14 @@ class ViraApplication:
         
         if args.set_model:
             self._set_model()
+            return
+        
+        if args.set_language:
+            self._set_language()
+            return
+        
+        if args.set_show_suggestions:
+            self._set_show_suggestions()
             return
         
         # Handle alias commands
@@ -100,11 +108,11 @@ class ViraApplication:
             else:
                 masked_api = "***"
         else:
-            masked_api = "(chưa cấu hình)"
+            masked_api = "(not configured)"
         
         aliases = self.config.list_aliases()
         
-        console.print("\n[bold]Cấu hình hiện tại:[/bold]")
+        console.print("\n[bold]Settings:[/bold]")
         console.print(f"  Model: {current_model}")
         console.print(f"  Language: {current_lang}")
         console.print(f"  Show suggestions: {current_show_sugg}")
@@ -133,6 +141,47 @@ class ViraApplication:
             selected_model = AVAILABLE_MODELS[int(choice) - 1]
             self.config.set_model(selected_model)
             print_success(f"Model set to {selected_model}")
+        else:
+            print_error("Invalid choice")
+    
+    def _set_language(self):
+        """Set preferred language"""
+        available_languages = ["en", "vi"]
+        
+        console.print("\nSelect language:")
+        console.print("  1. English (en)")
+        console.print("  2. Vietnamese (vi)")
+        
+        choice = input("Choice (1-2): ").strip()
+        
+        if choice == "1":
+            self.config.set_language("en")
+            print_success("Language set to English")
+        elif choice == "2":
+            self.config.set_language("vi")
+            print_success("Ngôn ngữ trả lời đã được đặt sang Tiếng Việt")
+        else:
+            print_error("Invalid choice")
+    
+    def _set_show_suggestions(self):
+        """Toggle showing suggestions"""
+        current_value = self.config.get_show_suggestions()
+        
+        console.print(f"\nCurrent setting: Show suggestions = {current_value}")
+        console.print("Toggle suggestions?")
+        console.print("  1. Enable suggestions")
+        console.print("  2. Disable suggestions")
+        
+        choice = input("Choice (1-2): ").strip()
+        
+        if choice == "1":
+            self.config.set_show_suggestions(True)
+            print_success("Suggestions enabled")
+        elif choice == "2":
+            self.config.set_show_suggestions(False)
+            print_success("Suggestions disabled")
+        else:
+            print_error("Invalid choice")
     
     def _execute_alias(self, alias_name):
         """Execute alias if exists"""
